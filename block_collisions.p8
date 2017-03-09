@@ -54,7 +54,7 @@ function blocks_top(e)
   return blocks
 end
 
-function blocks_bottom(e)
+function blocks_below(e)
   local blocks = {}
   add(blocks, block(e.x, e.y+e.h))
   if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
@@ -67,7 +67,7 @@ function box_collide(e)
   if (e.facing == 1) blocks = blocks_front(e)
   if (e.facing == 0) blocks = blocks_back(e)
   if (e.facing == 2) blocks = blocks_top(e)
-  if (e.facing == 3) blocks = blocks_bottom(e)  
+  if (e.facing == 3) blocks = blocks_below(e) 
   for b in all(blocks) do
     r1 = sp_to_rect(e)
     r2 = sp_to_rect(b)
