@@ -7,10 +7,14 @@ function print_debug()
   print("collision")
   print(box_collide(futur_p))
   print("---------")
+  print("movements")
+  print(p.mvt_h)
+  print(p.mvt_v)
+  print("---------")
 end
 
 function _init()
-  speed = 7
+  speed = 2
   p = {
     x = 76, y = 64,
     w = 8, h = 8,
@@ -19,6 +23,7 @@ function _init()
     mvt_v = 0
   }
   futur_p = {}
+  blocks_to_check = {}
 end
 
 function block(px, py)
@@ -34,56 +39,61 @@ function block(px, py)
   return b
 end
 
-function blocks_front(e)
-  local blocks = {}
-  add(blocks, block(e.x + e.w, e.y))
-  if ((e.y % e.h) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
-  return blocks
+function blocks_front(e, blocks_to_check)
+  add(blocks_to_check, block(e.x + e.w, e.y))
+  if ((e.y % e.h) != 0) add (blocks_to_check, block(e.x + e.w, e.y + e.h))
+  return blocks_to_check
 end
 
-function blocks_back(e)
-  local blocks = {}
-  add(blocks, block(e.x, p.y))
-  if ((e.y % e.h) != 0) add (blocks,block(e.x, e.y + e.h))
-  return blocks
+function blocks_back(e, blocks_to_check)
+  add(blocks_to_check, block(e.x, e.y))
+  if ((e.y % e.h) != 0) add (blocks_to_check, block(e.x, e.y + e.h))
+  return blocks_to_check
 end
 
-function blocks_top(e)
-  local blocks = {}
-  add(blocks, block(e.x, e.y))
-  if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y))
-  return blocks
+function blocks_top(e, blocks_to_check)
+  add(blocks_to_check, block(e.x, e.y))
+  if ((e.x % e.w) != 0) add (blocks_to_check, block(e.x + e.w, e.y))
+  return blocks_to_check
 end
 
-function blocks_below(e)
-  local blocks = {}
-  add(blocks, block(e.x, e.y+e.h))
-  if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
-  return blocks
+function blocks_below(e, blocks_to_check)
+  add(blocks_to_check, block(e.x, e.y+e.h))
+  if ((e.x % e.w) != 0) add (blocks_to_check, block(e.x + e.w, e.y + e.h))
+  return blocks_to_check
 end
 
-function box_collide(e)
+function check_collision(blocks_to_check, e)
   local collide = true
   local solid = false
-  if (e.mvt_h == 1)  blocks = blocks_front(e)
-  if (e.mvt_h == -1) blocks = blocks_back(e)
-  if (e.mvt_v == -1) blocks = blocks_top(e)
-  if (e.mvt_v == 1)  blocks = blocks_below(e) 
-  for b in all(blocks) do
+
+  for b in all(blocks_to_check) do
     r1 = sp_to_rect(e)
     r2 = sp_to_rect(b)
     if(r1.x1 > r2.x2) or 
-        (r2.x1 > r1.x2) or 
-        (r1.y1 > r2.y2) or 
-        (r2.y1 > r1.y2) then
+      (r2.x1 > r1.x2) or 
+      (r1.y1 > r2.y2) or 
+      (r2.y1 > r1.y2) then
       collide = false
     end
   end
-  for b in all(blocks) do
+  for b in all(blocks_to_check) do
     solid = b.solid
     if (solid) break
   end
   return collide and solid
+end
+
+
+function box_collide(e)
+  blocks_to_check = {}
+
+  if (e.mvt_h == 1)  blocks_to_check = blocks_front(e, blocks_to_check)
+  if (e.mvt_h == -1) blocks_to_check = blocks_back(e, blocks_to_check)
+  if (e.mvt_v == -1) blocks_to_check = blocks_top(e, blocks_to_check)
+  if (e.mvt_v == 1)  blocks_to_check = blocks_below(e, blocks_to_check)
+
+  return check_collision(blocks_to_check, e)
 end
 
 function sp_to_rect(e)
@@ -99,10 +109,7 @@ function _draw()
   cls()
   map(0,0,0,0,16,16)
   spr(p.sp, p.x, p.y, 1, 1)
-  if (futur_p.mvt_h == 1)  for b in all(blocks_front(futur_p)) do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.mvt_h == -1) for b in all(blocks_back(futur_p))  do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.mvt_v == -1) for b in all(blocks_top(futur_p))   do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.mvt_v == 1)  for b in all(blocks_below(futur_p)) do spr(16, b.x, b.y, 1, 1) end
+  for b in all(blocks_to_check) do spr(16, b.x, b.y, 1, 1) end
   print_debug()
 end
 
@@ -118,13 +125,16 @@ function update_from_controls()
   if(btn(0)) then
     futur_p.x -= speed
     futur_p.mvt_h = -1
-  elseif(btn(1)) then
+  end
+  if(btn(1)) then
     futur_p.x += speed
     futur_p.mvt_h = 1
-  elseif(btn(2)) then
+  end
+  if(btn(2)) then
     futur_p.y -= speed
     futur_p.mvt_v = -1
-  elseif(btn(3)) then
+  end
+  if(btn(3)) then
     futur_p.y += speed
     futur_p.mvt_v = 1
   end
@@ -132,12 +142,12 @@ function update_from_controls()
     p = copy_table(futur_p)
   else
     if (p.x % 8 != 0) then
-      if(futur_p.mvt_h == 1 ) p.x += 8 - (p.x % 8)
-      if(futur_p.mvt_h == -1) p.x -= (p.x % 8)
+      if(futur_p.mvt_h == 1  and futur_p.mvt_v == 0) p.x += 8 - (p.x % 8)
+      if(futur_p.mvt_h == -1 and futur_p.mvt_v == 0) p.x -= (p.x % 8)
     end
     if (p.y % 8 != 0) then
-      if(futur_p.mvt_v == -1) p.y -= (p.y % 8)
-      if(futur_p.mvt_v == 1 ) p.y += 8 - (p.y % 8)
+      if(futur_p.mvt_v == -1 and futur_p.mvt_h == 0) p.y -= (p.y % 8)
+      if(futur_p.mvt_v == 1  and futur_p.mvt_h == 0) p.y += 8 - (p.y % 8)
     end
   end 
 end
