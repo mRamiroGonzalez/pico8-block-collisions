@@ -15,7 +15,8 @@ function _init()
     x = 76, y = 64,
     w = 8, h = 8,
     sp = 0,
-    facing = nil
+    mvt_h = 0,
+    mvt_v = 0
   }
   futur_p = {}
 end
@@ -64,10 +65,10 @@ end
 function box_collide(e)
   local collide = true
   local solid = false
-  if (e.facing == 1) blocks = blocks_front(e)
-  if (e.facing == 0) blocks = blocks_back(e)
-  if (e.facing == 2) blocks = blocks_top(e)
-  if (e.facing == 3) blocks = blocks_below(e) 
+  if (e.mvt_h == 1)  blocks = blocks_front(e)
+  if (e.mvt_h == -1) blocks = blocks_back(e)
+  if (e.mvt_v == -1) blocks = blocks_top(e)
+  if (e.mvt_v == 1)  blocks = blocks_below(e) 
   for b in all(blocks) do
     r1 = sp_to_rect(e)
     r2 = sp_to_rect(b)
@@ -98,10 +99,10 @@ function _draw()
   cls()
   map(0,0,0,0,16,16)
   spr(p.sp, p.x, p.y, 1, 1)
-  if (futur_p.facing == 1) for b in all(blocks_front(futur_p))  do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.facing == 0) for b in all(blocks_back(futur_p))   do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.facing == 2) for b in all(blocks_top(futur_p))    do spr(16, b.x, b.y, 1, 1) end
-  if (futur_p.facing == 3) for b in all(blocks_bottom(futur_p)) do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.mvt_h == 1)  for b in all(blocks_front(futur_p)) do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.mvt_h == -1) for b in all(blocks_back(futur_p))  do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.mvt_v == -1) for b in all(blocks_top(futur_p))   do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.mvt_v == 1)  for b in all(blocks_below(futur_p)) do spr(16, b.x, b.y, 1, 1) end
   print_debug()
 end
 
@@ -110,32 +111,33 @@ function _update()
 end
 
 function update_from_controls()
-  p.facing = nil
+  p.mvt_v = 0
+  p.mvt_h = 0
   futur_p = copy_table(p)
 
   if(btn(0)) then
     futur_p.x -= speed
-    futur_p.facing = 0
+    futur_p.mvt_h = -1
   elseif(btn(1)) then
     futur_p.x += speed
-    futur_p.facing = 1
+    futur_p.mvt_h = 1
   elseif(btn(2)) then
     futur_p.y -= speed
-    futur_p.facing = 2
+    futur_p.mvt_v = -1
   elseif(btn(3)) then
     futur_p.y += speed
-    futur_p.facing = 3
+    futur_p.mvt_v = 1
   end
   if not box_collide(futur_p) then
     p = copy_table(futur_p)
   else
     if (p.x % 8 != 0) then
-      if(futur_p.facing == 1) p.x += 8 - (p.x % 8)
-      if(futur_p.facing == 0) p.x -= (p.x % 8)
+      if(futur_p.mvt_h == 1 ) p.x += 8 - (p.x % 8)
+      if(futur_p.mvt_h == -1) p.x -= (p.x % 8)
     end
     if (p.y % 8 != 0) then
-      if(futur_p.facing == 2) p.y -= (p.y % 8)
-      if(futur_p.facing == 3) p.y += 8 - (p.y % 8)
+      if(futur_p.mvt_v == -1) p.y -= (p.y % 8)
+      if(futur_p.mvt_v == 1 ) p.y += 8 - (p.y % 8)
     end
   end 
 end
