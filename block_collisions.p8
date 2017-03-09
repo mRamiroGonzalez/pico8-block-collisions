@@ -14,7 +14,7 @@ function _init()
   x = 76, y = 64,
   w = 8, h = 8,
   sp = 0,
-  facing = 1
+  facing = nil
  }
  futur_p = {}
 end
@@ -109,6 +109,7 @@ function _update()
 end
 
 function update_from_controls()
+ p.facing = nil
  futur_p = copy_table(p)
 
  if(btn(0)) then
