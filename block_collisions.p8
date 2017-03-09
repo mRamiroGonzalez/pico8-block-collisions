@@ -3,135 +3,147 @@ version 8
 __lua__
 
 function print_debug()
- print "---------"
- print "collision"
- print(box_collide(futur_p))
- print "---------"
+  print("---------")
+  print("collision")
+  print(box_collide(futur_p))
+  print("---------")
 end
 
 function _init()
- p = {
-  x = 76, y = 64,
-  w = 8, h = 8,
-  sp = 0,
-  facing = nil
- }
- futur_p = {}
+  speed = 7
+  p = {
+    x = 76, y = 64,
+    w = 8, h = 8,
+    sp = 0,
+    facing = nil
+  }
+  futur_p = {}
 end
 
 function block(px, py)
- sprite = mget(flr((px)/8),flr(py/8))
- b = {
-  x = flr(px / 8) * 8,
-  y = flr(py / 8) * 8,
-  w = 8,
-  h = 8,
-  sp = sprite,
-  solid = fget(sprite, 0)
- }
- return b
+  sprite = mget(flr((px)/8),flr(py/8))
+  b = {
+    x = flr(px / 8) * 8,
+    y = flr(py / 8) * 8,
+    w = 8,
+    h = 8,
+    sp = sprite,
+    solid = fget(sprite, 0)
+  }
+  return b
 end
 
 function blocks_front(e)
- local blocks = {}
- add(blocks, block(e.x + e.w, e.y))
- if ((e.y % e.h) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
- return blocks
+  local blocks = {}
+  add(blocks, block(e.x + e.w, e.y))
+  if ((e.y % e.h) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
+  return blocks
 end
 
 function blocks_back(e)
- local blocks = {}
- add(blocks, block(e.x, p.y))
- if ((e.y % e.h) != 0) add (blocks,block(e.x, e.y + e.h))
- return blocks
+  local blocks = {}
+  add(blocks, block(e.x, p.y))
+  if ((e.y % e.h) != 0) add (blocks,block(e.x, e.y + e.h))
+  return blocks
 end
 
 function blocks_top(e)
- local blocks = {}
- add(blocks, block(e.x, e.y))
- if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y))
- return blocks
+  local blocks = {}
+  add(blocks, block(e.x, e.y))
+  if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y))
+  return blocks
 end
 
 function blocks_bottom(e)
- local blocks = {}
- add(blocks, block(e.x, e.y+e.h))
- if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
- return blocks
+  local blocks = {}
+  add(blocks, block(e.x, e.y+e.h))
+  if ((e.x % e.w) != 0) add (blocks,block(e.x + e.w, e.y + e.h))
+  return blocks
 end
 
 function box_collide(e)
- local collide = true
- local solid = false
- if (e.facing == 1) blocks = blocks_front(e)
- if (e.facing == 0) blocks = blocks_back(e)
- if (e.facing == 2) blocks = blocks_top(e)
- if (e.facing == 3) blocks = blocks_bottom(e)  
- for b in all(blocks) do
-  r1 = sp_to_rect(e)
-  r2 = sp_to_rect(b)
-  if(r1.x1 > r2.x2) or 
-    (r2.x1 > r1.x2) or 
-    (r1.y1 > r2.y2) or 
-    (r2.y1 > r1.y2) then
-   collide = false
+  local collide = true
+  local solid = false
+  if (e.facing == 1) blocks = blocks_front(e)
+  if (e.facing == 0) blocks = blocks_back(e)
+  if (e.facing == 2) blocks = blocks_top(e)
+  if (e.facing == 3) blocks = blocks_bottom(e)  
+  for b in all(blocks) do
+    r1 = sp_to_rect(e)
+    r2 = sp_to_rect(b)
+    if(r1.x1 > r2.x2) or 
+        (r2.x1 > r1.x2) or 
+        (r1.y1 > r2.y2) or 
+        (r2.y1 > r1.y2) then
+      collide = false
+    end
   end
- end
- for b in all(blocks) do
-  solid = b.solid
-  if (solid) break
- end
- return collide and solid
+  for b in all(blocks) do
+    solid = b.solid
+    if (solid) break
+  end
+  return collide and solid
 end
 
 function sp_to_rect(e)
- local r = {}
-  r.x1 = e.x
-  r.y1 = e.y
-  r.x2 = e.x + e.w - 1
-  r.y2 = e.y + e.h - 1
- return r
+  local r = {}
+    r.x1 = e.x
+    r.y1 = e.y
+    r.x2 = e.x + e.w - 1
+    r.y2 = e.y + e.h - 1
+  return r
 end
 
 function _draw()
- cls()
- map(0,0,0,0,16,16)
- spr(p.sp, p.x, p.y, 1, 1)
- if (futur_p.facing == 1) for b in all(blocks_front(futur_p))  do spr(16, b.x, b.y, 1, 1) end
- if (futur_p.facing == 0) for b in all(blocks_back(futur_p))   do spr(16, b.x, b.y, 1, 1) end
- if (futur_p.facing == 2) for b in all(blocks_top(futur_p))    do spr(16, b.x, b.y, 1, 1) end
- if (futur_p.facing == 3) for b in all(blocks_bottom(futur_p)) do spr(16, b.x, b.y, 1, 1) end
- print_debug()
+  cls()
+  map(0,0,0,0,16,16)
+  spr(p.sp, p.x, p.y, 1, 1)
+  if (futur_p.facing == 1) for b in all(blocks_front(futur_p))  do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.facing == 0) for b in all(blocks_back(futur_p))   do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.facing == 2) for b in all(blocks_top(futur_p))    do spr(16, b.x, b.y, 1, 1) end
+  if (futur_p.facing == 3) for b in all(blocks_bottom(futur_p)) do spr(16, b.x, b.y, 1, 1) end
+  print_debug()
 end
 
 function _update()
- update_from_controls()
+  update_from_controls()
 end
 
 function update_from_controls()
- p.facing = nil
- futur_p = copy_table(p)
+  p.facing = nil
+  futur_p = copy_table(p)
 
- if(btn(0)) then
-  futur_p.x -= 2
-  futur_p.facing = 0
- elseif(btn(1)) then
-  futur_p.x += 2
-  futur_p.facing = 1
- elseif(btn(2)) then
-  futur_p.y -= 2
-  futur_p.facing = 2
- elseif(btn(3)) then
-  futur_p.y += 2
-  futur_p.facing = 3
- end
- if(not box_collide(futur_p)) p = copy_table(futur_p)
+  if(btn(0)) then
+    futur_p.x -= speed
+    futur_p.facing = 0
+  elseif(btn(1)) then
+    futur_p.x += speed
+    futur_p.facing = 1
+  elseif(btn(2)) then
+    futur_p.y -= speed
+    futur_p.facing = 2
+  elseif(btn(3)) then
+    futur_p.y += speed
+    futur_p.facing = 3
+  end
+  if not box_collide(futur_p) then
+    p = copy_table(futur_p)
+  else
+    if (p.x % 8 != 0) then
+      if(futur_p.facing == 1) p.x += 8 - (p.x % 8)
+      if(futur_p.facing == 0) p.x -= (p.x % 8)
+    end
+    if (p.y % 8 != 0) then
+      if(futur_p.facing == 2) p.y -= (p.y % 8)
+      if(futur_p.facing == 3) p.y += 8 - (p.y % 8)
+    end
+  end 
 end
 
 function copy_table(from)
- local copy = {}
- for k,v in pairs(from) do copy[k] = v end
- return copy
+  local copy = {}
+  for k,v in pairs(from) do copy[k] = v end
+  return copy
 end
 
 __gfx__
