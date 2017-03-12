@@ -8,6 +8,12 @@ function print_debug()
   print(v_col)
   print(h_col)
   print("---------")
+  print("jumping")
+  print(p.jumping)
+  print(p.y)
+  print(p.dy)
+  print(p.mvt_v)
+  print("---------")
 end
 
 function _init()
@@ -18,8 +24,9 @@ function _init()
     sp = 0,
     mvt_h = 0,
     mvt_v = 0,
-    v_speed = 2,
-    h_speed = 2
+    v_speed = 4,
+    h_speed = 4,
+    jumping = false
   }
 end
 
@@ -111,33 +118,42 @@ function sp_to_rect(e)
 end
 
 function vertical_controls(p)
-  p.dy = 0
-  p.mvt_v = 0
   
-  if(btn(2)) then
-    p.dy = -p.v_speed
+  --if(btn(2)) then
+  --  p.dy = -p.v_speed
+  --  p.mvt_v = -1
+  --end
+  --if(btn(3)) then
+  --  p.dy = p.v_speed
+  --  p.mvt_v = 1
+  --end
+  if btnp(4) and not p.jumping then
+    p.dy = -7
+    p.jumping = true
     p.mvt_v = -1
-  end
-  if(btn(3)) then
-    p.dy = p.v_speed
-    p.mvt_v = 1
-  end
+  end 
   
   v_col = box_collide_v(p)
 
   if (p.y % 8 != 0) and v_col then
-    if(p.mvt_v == -1 and p.mvt_h == 0) p.y -= (p.y % 8)
-    if(p.mvt_v == 1  and p.mvt_h == 0) p.y += 8 - (p.y % 8)
+    if(p.mvt_v == -1) p.y -= (p.y % 8)
+    if(p.mvt_v == 1) p.y += 8 - (p.y % 8)
   end
 
-  if (not v_col) then
-    p.y += p.dy
+  if (not (v_col)) p.y += p.dy
+
+  if (is_on_a_solid_block(p)) then 
+    p.jumping = false
+    p.dy = 0
+    p.mvt_v = 0
+  end
+  if (is_below_a_solid_block(p)) then
+    p.dy = 1
   end
 end
 
 function horizontal_controls(p)
   p.dx = 0
-  p.mvt_h = 0
 
   if(btn(0)) then
     p.dx = -p.h_speed
@@ -151,8 +167,8 @@ function horizontal_controls(p)
   h_col = box_collide_h(p)
   
   if (p.x % 8 != 0) and h_col then
-    if(p.mvt_h == 1  and p.mvt_v == 0) p.x += 8 - (p.x % 8)
-    if(p.mvt_h == -1 and p.mvt_v == 0) p.x -= (p.x % 8)
+    if(p.mvt_h == 1) p.x += 8 - (p.x % 8)
+    if(p.mvt_h == -1) p.x -= (p.x % 8)
   end
 
   if (not h_col) then
@@ -164,20 +180,48 @@ function _draw()
   cls()
   map(0,0,0,0,16,16)
   spr(p.sp, p.x, p.y, 1, 1)
-  for b in all(blocks_to_check_h) do spr(17, b.x, b.y, 1, 1) end
-  for b in all(blocks_to_check_v) do spr(16, b.x, b.y, 1, 1) end
+  --for b in all(blocks_to_check_h) do spr(17, b.x, b.y, 1, 1) end
+  --for b in all(blocks_to_check_v) do spr(16, b.x, b.y, 1, 1) end
   print_debug()
 end
 
 function _update()
+  update_gravity(p)
   update_from_controls(p)
 end
 
+function update_gravity(p)
+  if (p.dy < p.v_speed) then
+    p.dy += 1
+  else
+    p.dy = p.v_speed
+  end
+  if p.dy < 0 then
+    p.mvt_v = -1
+  else
+    p.mvt_v = 1
+  end
+end
+
 function update_from_controls(p)
- p.mvt_v = 0
- p.mvt_h = 0
  horizontal_controls(p)
  vertical_controls(p)
+end
+
+function get_block_below(e, flag)
+ return (get_block_flag(e.x, e.y+8, flag)) or (get_block_flag(e.x+7, e.y+8, flag))
+end
+function get_block_flag(x, y, flag)
+ return fget(mget(flr(x/8), flr(y/8)), flag)
+end
+function is_on_a_solid_block(e)
+ return get_block_below(e, 0)
+end
+function is_below_a_solid_block(e)
+ return get_block_on_top(e, 0)
+end
+function get_block_on_top(e, flag)
+ return get_block_flag(e.x, e.y-1, flag) or get_block_flag(e.x+7, e.y-1, flag)
 end
 
 function copy_table(from)
