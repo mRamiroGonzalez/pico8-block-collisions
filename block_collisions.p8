@@ -11,16 +11,16 @@ function print_debug()
 end
 
 function _init()
-  speed = 2
   p = {
     x = 76, y = 64,
+    dx = 0, dy = 0,
     w = 8, h = 8,
     sp = 0,
     mvt_h = 0,
-    mvt_v = 0
+    mvt_v = 0,
+    v_speed = 2,
+    h_speed = 2
   }
-  blocks_to_check_v = {}
-  blocks_to_check_h = {}
 end
 
 function block(px, py)
@@ -55,7 +55,7 @@ function blocks_top(e, blocks_to_check)
 end
 
 function blocks_below(e, blocks_to_check)
-  add(blocks_to_check, block(e.x, e.y+e.h))
+  add(blocks_to_check, block(e.x, e.y + e.h))
   if ((e.x % e.w) != 0) add (blocks_to_check, block(e.x + e.w, e.y + e.h))
   return blocks_to_check
 end
@@ -83,16 +83,22 @@ end
 
 function box_collide_v(e)
   blocks_to_check_v = {}
-  if (e.mvt_v == -1) blocks_to_check_v = blocks_top(e, blocks_to_check_v)
-  if (e.mvt_v == 1)  blocks_to_check_v = blocks_below(e, blocks_to_check_v)
-  return check_collision(blocks_to_check_v, e)
+  local futur_e_v = copy_table(e)
+  futur_e_v.y += futur_e_v.dy
+
+  if (futur_e_v.mvt_v == -1) blocks_to_check_v = blocks_top(futur_e_v, blocks_to_check_v)
+  if (futur_e_v.mvt_v == 1)  blocks_to_check_v = blocks_below(futur_e_v, blocks_to_check_v)
+  return check_collision(blocks_to_check_v, futur_e_v)
 end
 
 function box_collide_h(e)
   blocks_to_check_h = {}
-  if (e.mvt_h == 1)  blocks_to_check_h = blocks_front(e, blocks_to_check_h)
-  if (e.mvt_h == -1) blocks_to_check_h = blocks_back(e, blocks_to_check_h)
-  return check_collision(blocks_to_check_h, e)
+  local futur_e_h = copy_table(e)
+  futur_e_h.x += futur_e_h.dx
+
+  if (futur_e_h.mvt_h == 1)  blocks_to_check_h = blocks_front(futur_e_h, blocks_to_check_h)
+  if (futur_e_h.mvt_h == -1) blocks_to_check_h = blocks_back(futur_e_h, blocks_to_check_h)
+  return check_collision(blocks_to_check_h, futur_e_h)
 end
 
 function sp_to_rect(e)
@@ -104,53 +110,53 @@ function sp_to_rect(e)
   return r
 end
 
-function vertical_controls()
-  local futur_p_v = copy_table(p)
+function vertical_controls(p)
+  p.dy = 0
   p.mvt_v = 0
   
   if(btn(2)) then
-    futur_p_v.y -= speed
-    futur_p_v.mvt_v = -1
+    p.dy = -p.v_speed
+    p.mvt_v = -1
   end
   if(btn(3)) then
-    futur_p_v.y += speed
-    futur_p_v.mvt_v = 1
+    p.dy = p.v_speed
+    p.mvt_v = 1
   end
   
-  v_col = box_collide_v(futur_p_v)
-  if (not v_col) then
-    p.y = futur_p_v.y
-    p.mvt_v = futur_p_v.mvt_v
-  end
+  v_col = box_collide_v(p)
 
   if (p.y % 8 != 0) and v_col then
-    if(futur_p_v.mvt_v == -1 and futur_p_v.mvt_h == 0) p.y -= (p.y % 8)
-    if(futur_p_v.mvt_v == 1  and futur_p_v.mvt_h == 0) p.y += 8 - (p.y % 8)
+    if(p.mvt_v == -1 and p.mvt_h == 0) p.y -= (p.y % 8)
+    if(p.mvt_v == 1  and p.mvt_h == 0) p.y += 8 - (p.y % 8)
+  end
+
+  if (not v_col) then
+    p.y += p.dy
   end
 end
 
-function horizontal_controls()
-  local futur_p_h = copy_table(p)
+function horizontal_controls(p)
+  p.dx = 0
   p.mvt_h = 0
 
   if(btn(0)) then
-    futur_p_h.x -= speed
-    futur_p_h.mvt_h = -1
+    p.dx = -p.h_speed
+    p.mvt_h = -1
   end
   if(btn(1)) then
-    futur_p_h.x += speed
-    futur_p_h.mvt_h = 1
+    p.dx = p.h_speed
+    p.mvt_h = 1
   end
 
-  h_col = box_collide_h(futur_p_h)
-  if (not h_col) then
-    p.x = futur_p_h.x
-    p.mvt_h = futur_p_h.mvt_h
-  end
+  h_col = box_collide_h(p)
   
   if (p.x % 8 != 0) and h_col then
-    if(futur_p_h.mvt_h == 1  and futur_p_h.mvt_v == 0) p.x += 8 - (p.x % 8)
-    if(futur_p_h.mvt_h == -1 and futur_p_h.mvt_v == 0) p.x -= (p.x % 8)
+    if(p.mvt_h == 1  and p.mvt_v == 0) p.x += 8 - (p.x % 8)
+    if(p.mvt_h == -1 and p.mvt_v == 0) p.x -= (p.x % 8)
+  end
+
+  if (not h_col) then
+    p.x += p.dx
   end
 end
 
@@ -164,12 +170,14 @@ function _draw()
 end
 
 function _update()
-  update_from_controls()
+  update_from_controls(p)
 end
 
-function update_from_controls()
-  vertical_controls()
-  horizontal_controls()
+function update_from_controls(p)
+ p.mvt_v = 0
+ p.mvt_h = 0
+ horizontal_controls(p)
+ vertical_controls(p)
 end
 
 function copy_table(from)
@@ -326,7 +334,7 @@ __map__
 010000000001000100000000010000010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010000000000000000000001000000010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010000000000000000000100000000010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-01000f0f0f0f0f0000000000000000010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010f010f0f0f0f0000000000000000010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010101010101010101010101010101010f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0f300f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
